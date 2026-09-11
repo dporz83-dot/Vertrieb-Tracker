@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vertriebs- Tracker</title>
+
+  <!-- PWA-META-TAGS (iOS & Android) -->
+  <meta name="theme-color" content="#007bff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vertrieb Tracker">
+
+  <!-- INLINE WEB APP MANIFEST -->
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlZlcnRyaWVCcy0gJiBQZXJmb3JtYW5jZSBUcmFja2VyIiwKICAic2hvcnRfbmFtZSI6ICJWZXJ0cmllYiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRmNmg5IiwKICAidGhlbWVfY29sb3IiOiAiIzAwN2JmZiIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDt1dGY4LDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHJlY3Qgd2lkdGg9JzEwMCcgaGVpZ2h0PScxMDAnIHJ4PScyMCcgZmlsbD0nIzAwN2JmZicvPjx0ZXh0IHg9JzUwJyB5PSc2NScgZm9udC1zaXplPSc2MCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nd2hpdGUnPjE2ODA8L3RleHQ+PC9zdmc+IiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfQogIF0KfQ==">
+
+  <style>
+    :root {
+      --primary: #007bff;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --info: #17a2b8;
+      --bg: #f4f6f9;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 15px;
+      background: var(--bg);
+      color: #333;
+      touch-action: manipulation;
+    }
+    h1 { text-align: center; font-size: 1.4rem; margin-bottom: 15px; }
+
+    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #444; }
+
+    .timer-container { text-align: center; }
+    .timer-display { font-size: 2.2rem; font-weight: bold; font-family: monospace; margin: 5px 0; }
+    .timer-status { font-weight: bold; color: #666; text-transform: uppercase; font-size: 0.85rem; }
+    .timer-status.running { color: var(--success); }
+    .timer-status.paused { color: var(--danger); }
+
+    .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+    .btn { border: none; border-radius: 8px; padding: 14px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; -webkit-tap-highlight-color: transparent; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-start { background: var(--success); color: white; }
+    .btn-pause { background: var(--warning); color: #000; }
+    .btn-stop { background: var(--danger); color: white; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .counter-btn {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+      user-select: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .counter-btn:active { transform: scale(0.98); background: #f8f9fa; }
+
+    .btn-klingeln { border-color: var(--info); background: #f0faff; }
+    .btn-klingeln:active { background: #e0f2fe; }
+    .btn-klingeln .counter-value { color: var(--info); }
+
+    .btn-zaehler { border-color: var(--success); background: #f0fff4; }
+    .btn-zaehler:active { background: #dcfce7; }
+    .btn-zaehler .counter-value { color: var(--success); }
+
+    .counter-title { font-size: 0.9rem; color: #444; font-weight: bold; }
+    .counter-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); margin: 2px 0; }
+    .counter-sub { font-size: 0.75rem; color: #888; }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .btn-minus {
+      border: none;
+      background: #fee2e2;
+      color: #dc2626;
+      font-weight: bold;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-minus:active { background: #fca5a5; transform: scale(0.95); }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .stat-box { text-align: center; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e9ecef; }
+    .stat-label { font-size: 0.72rem; color: #666; text-transform: uppercase; font-weight: bold; }
+    .stat-val { font-size: 1.15rem; font-weight: bold; color: #111; margin-top: 2px; }
+    .stat-val.highlight { color: var(--success); }
+
+    .prov-input { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .prov-input input { width: 90px; padding: 8px; font-size: 1rem; text-align: right; border: 1px solid #ccc; border-radius: 6px; }
+
+    .action-btns { display: flex; gap: 10px; margin-top: 15px; }
+    .btn-secondary { background: #6c757d; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Vertriebs- & Performance Tracker</h1>
+
+  <!-- ZEITERFASSUNG -->
+  <div class="card timer-container">
+    <div id="statusText" class="timer-status">Bereit zum Start</div>
+    <div class="timer-display" id="workTimer">00:00:00</div>
+    <div style="font-size: 0.85rem; color: #666; margin-bottom: 8px;">
+      Pause: <span id="pauseTimer">00:00:00</span>
+    </div>
+
+    <div class="btn-group">
+      <button id="startBtn" class="btn btn-start" onclick="startWork()">Start</button>
+      <button id="pauseBtn" class="btn btn-pause" onclick="togglePause()" disabled>Pause</button>
+      <button id="stopBtn" class="btn btn-stop" onclick="stopWork()" disabled>Ende</button>
+    </div>
+  </div>
+
+  <!-- COUNTER BUTTONS -->
+  <div class="grid">
+    <!-- Kunden -->
+    <div class="counter-btn" onclick="addCount('kunde')">
+      <div>
+        <div class="counter-title">Kunden</div>
+        <div class="counter-value" id="val-kunde">0</div>
+        <div class="counter-sub">Tippen für +1</div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-minus" onclick="event.stopPropagation(); decreaseCount('kunde')">-1</button>
+      </div>
+    </div>
+
+    <!-- Abrechnung -->
+    <div class="counter-btn" onclick="addCount('abrechnung')">
+      <div>
+        <div class="counter-title">Abrechnung</div>
+        <div class="counter-value" id="val-abrechnung">0</div>
+        <div class="counter-sub">Tippen für +1</div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-minus" onclick="event.stopPropagation(); decreaseCount('abrechnung')">-1</button>
+      </div>
+    </div>
+
+    <!-- Zähler -->
+    <div class="counter-btn btn-zaehler" onclick="addCounterWithProvision()">
+      <div>
+        <div class="counter-title">⚡ Zähler</div>
+        <div class="counter-value" id="val-zaehler">0</div>
+        <div class="counter-sub">Tippen für +1</div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-minus" onclick="event.stopPropagation(); decreaseZaehler()">-1</button>
+      </div>
+    </div>
+
+    <!-- Entscheider -->
+    <div class="counter-btn" onclick="addCount('entscheider')">
+      <div>
+        <div class="counter-title">Entscheider</div>
+        <div class="counter-value" id="val-entscheider">0</div>
+        <div class="counter-sub">Tippen für +1</div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-minus" onclick="event.stopPropagation(); decreaseCount('entscheider')">-1</button>
+      </div>
+    </div>
+
+    <!-- Klingeln (BREIT GANZ UNTEN) -->
+    <div class="counter-btn btn-klingeln" style="grid-column: span 2;" onclick="addCount('klingeln')">
+      <div>
+        <div class="counter-title">🔔 Klingeln</div>
+        <div class="counter-value" id="val-klingeln">0</div>
+        <div class="counter-sub">Tippen für +1</div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-minus" onclick="event.stopPropagation(); decreaseCount('klingeln')">-1</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UMSATZ & FINANZEN -->
+  <div class="card" style="margin-top: 15px;">
+    <div class="card-title">Finanzen & Stundensatz</div>
+    <div class="prov-input">
+      <label style="font-weight: bold; font-size: 0.85rem;">Standard-Provision (€):</label>
+      <input type="number" id="val-defaultProv" step="5" value="50" oninput="saveData()">
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Gesamtprovision</div>
+        <div class="stat-val highlight" id="val-totalProv">0,00 €</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Verdienst / Std.</div>
+        <div class="stat-val highlight" id="val-hourlyProv">0,00 €/h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAILLIERTE AUSWERTUNG / PERFORMANCE -->
+  <div class="card">
+    <div class="card-title">Performance-Auswertung</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Klingeln / Std.</div>
+        <div class="stat-val" id="val-klingelnPerHour">0,0 / h</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Klingeln / Zähler</div>
+        <div class="stat-val" id="val-klingelnPerZaehler">0,0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Entscheiderquote</div>
+        <div class="stat-val" id="val-entscheiderRate">0,0 %</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">€ / Klingeln</div>
+        <div class="stat-val" id="val-euroPerKlingeln">0,00 €</div>
+      </div>
+      <div class="stat-box" style="grid-column: span 2;">
+        <div class="stat-label">Ø Provision pro Zähler</div>
+        <div class="stat-val" id="val-avgProvPerZaehler">0,00 €</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERWALTUNG -->
+  <div class="action-btns">
+    <button class="btn btn-secondary" onclick="exportCSV()">CSV Export</button>
+    <button class="btn btn-stop" onclick="resetDay()">Tag zurücksetzen</button>
+  </div>
+
+<script>
+  var state = {
+    timerState: 'stopped',
+    accumulatedWorkMs: 0,
+    accumulatedPauseMs: 0,
+    lastStateChangeTimestamp: null,
+    klingeln: 0,
+    entscheider: 0,
+    kunde: 0,
+    abrechnung: 0,
+    zaehler: 0,
+    provisionsList: [],
+    defaultProv: 50
+  };
+
+  function getEffectiveTimes() {
+    var now = Date.now();
+    var totalWorkMs = state.accumulatedWorkMs || 0;
+    var totalPauseMs = state.accumulatedPauseMs || 0;
+
+    if (state.timerState === 'running' && state.lastStateChangeTimestamp) {
+      totalWorkMs += (now - state.lastStateChangeTimestamp);
+    } else if (state.timerState === 'paused' && state.lastStateChangeTimestamp) {
+      totalPauseMs += (now - state.lastStateChangeTimestamp);
+    }
+
+    return {
+      workSeconds: Math.floor(Math.max(0, totalWorkMs) / 1000),
+      pauseSeconds: Math.floor(Math.max(0, totalPauseMs) / 1000)
+    };
+  }
+
+  function loadData() {
+    try {
+      var saved = localStorage.getItem('trackerStateTimestamped');
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        for (var key in parsed) {
+          state[key] = parsed[key];
+        }
+        document.getElementById('val-defaultProv').value = state.defaultProv || 50;
+      }
+    } catch (e) {}
+    updateUI();
+  }
+
+  function saveData() {
+    var defInput = document.getElementById('val-defaultProv');
+    if (defInput) {
+      state.defaultProv = parseFloat(defInput.value) || 0;
+    }
+    try {
+      localStorage.setItem('trackerStateTimestamped', JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  setInterval(function() {
+    updateTimerDisplays();
+    calculateStats();
+  }, 250);
+
+  function formatTime(sec) {
+    var hrs = Math.floor(sec / 3600).toString().padStart(2, '0');
+    var mins = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+    var secs = (sec % 60).toString().padStart(2, '0');
+    return hrs + ":" + mins + ":" + secs;
+  }
+
+  function updateTimerDisplays() {
+    var times = getEffectiveTimes();
+    document.getElementById('workTimer').innerText = formatTime(times.workSeconds);
+    document.getElementById('pauseTimer').innerText = formatTime(times.pauseSeconds);
+  }
+
+  function startWork() {
+    state.timerState = 'running';
+    state.lastStateChangeTimestamp = Date.now();
+    saveData();
+    updateUI();
+  }
+
+  function togglePause() {
+    var now = Date.now();
+    if (state.timerState === 'running') {
+      state.accumulatedWorkMs += (now - state.lastStateChangeTimestamp);
+      state.timerState = 'paused';
+      state.lastStateChangeTimestamp = now;
+    } else if (state.timerState === 'paused') {
+      state.accumulatedPauseMs += (now - state.lastStateChangeTimestamp);
+      state.timerState = 'running';
+      state.lastStateChangeTimestamp = now;
+    }
+    saveData();
+    updateUI();
+  }
+
+  function stopWork() {
+    var now = Date.now();
+    if (state.timerState === 'running') {
+      state.accumulatedWorkMs += (now - state.lastStateChangeTimestamp);
+    } else if (state.timerState === 'paused') {
+      state.accumulatedPauseMs += (now - state.lastStateChangeTimestamp);
+    }
+    state.timerState = 'stopped';
+    state.lastStateChangeTimestamp = null;
+    saveData();
+    updateUI();
+  }
+
+  function addCount(key) {
+    state[key] = (state[key] || 0) + 1;
+    updateUI();
+    saveData();
+  }
+
+  function decreaseCount(key) {
+    if (state[key] && state[key] > 0) {
+      state[key]--;
+      updateUI();
+      saveData();
+    }
+  }
+
+  function addCounterWithProvision() {
+    var defaultVal = document.getElementById('val-defaultProv').value || 0;
+    var input = prompt("Provision für diesen Zähler in €:", defaultVal);
+
+    if (input !== null) {
+      var provAmount = parseFloat(input.replace(',', '.')) || 0;
+      state.zaehler++;
+      state.provisionsList.push(provAmount);
+      updateUI();
+      saveData();
+    }
+  }
+
+  function decreaseZaehler() {
+    if (state.zaehler > 0) {
+      state.zaehler--;
+      state.provisionsList.pop();
+      updateUI();
+      saveData();
+    }
+  }
+
+  function calculateStats() {
+    var times = getEffectiveTimes();
+    var totalProvision = 0;
+    for (var i = 0; i < state.provisionsList.length; i++) {
+      totalProvision += state.provisionsList[i];
+    }
+    var workHours = times.workSeconds / 3600;
+    var hourlyProv = workHours > 0 ? (totalProvision / workHours) : 0;
+
+    var klingelnPerHour = workHours > 0 ? (state.klingeln / workHours) : 0;
+    var klingelnPerZaehler = state.zaehler > 0 ? (state.klingeln / state.zaehler) : 0;
+    var entscheiderRate = state.klingeln > 0 ? ((state.entscheider / state.klingeln) * 100) : 0;
+    var euroPerKlingeln = state.klingeln > 0 ? (totalProvision / state.klingeln) : 0;
+    var avgProvPerZaehler = state.zaehler > 0 ? (totalProvision / state.zaehler) : 0;
+
+    document.getElementById('val-totalProv').innerText = totalProvision.toFixed(2).replace('.', ',') + ' €';
+    document.getElementById('val-hourlyProv').innerText = hourlyProv.toFixed(2).replace('.', ',') + ' €/h';
+    document.getElementById('val-klingelnPerHour').innerText = klingelnPerHour.toFixed(1).replace('.', ',') + ' / h';
+    document.getElementById('val-klingelnPerZaehler').innerText = klingelnPerZaehler.toFixed(1).replace('.', ',');
+    document.getElementById('val-entscheiderRate').innerText = entscheiderRate.toFixed(1).replace('.', ',') + ' %';
+    document.getElementById('val-euroPerKlingeln').innerText = euroPerKlingeln.toFixed(2).replace('.', ',') + ' €';
+    document.getElementById('val-avgProvPerZaehler').innerText = avgProvPerZaehler.toFixed(2).replace('.', ',') + ' €';
+  }
+
+  function updateUI() {
+    document.getElementById('val-klingeln').innerText = state.klingeln || 0;
+    document.getElementById('val-entscheider').innerText = state.entscheider || 0;
+    document.getElementById('val-kunde').innerText = state.kunde || 0;
+    document.getElementById('val-abrechnung').innerText = state.abrechnung || 0;
+    document.getElementById('val-zaehler').innerText = state.zaehler || 0;
+
+    var startBtn = document.getElementById('startBtn');
+    var pauseBtn = document.getElementById('pauseBtn');
+    var stopBtn = document.getElementById('stopBtn');
+    var statusText = document.getElementById('statusText');
+
+    if (state.timerState === 'running') {
+      statusText.innerText = "Arbeitszeit läuft";
+      statusText.className = "timer-status running";
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      pauseBtn.innerText = "Pause";
+      stopBtn.disabled = false;
+    } else if (state.timerState === 'paused') {
+      statusText.innerText = "In Pause";
+      statusText.className = "timer-status paused";
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      pauseBtn.innerText = "Weiterarbeiten";
+      stopBtn.disabled = false;
+    } else {
+      statusText.innerText = "Arbeitszeit Beendet / Bereit";
+      statusText.className = "timer-status";
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      pauseBtn.innerText = "Pause";
+      stopBtn.disabled = true;
+    }
+
+    updateTimerDisplays();
+    calculateStats();
+  }
+
+  function resetDay() {
+    if (confirm("Wirklich alle Zähler, Zähler-Provisionen und Zeiten zurücksetzen?")) {
+      state = {
+        timerState: 'stopped',
+        accumulatedWorkMs: 0,
+        accumulatedPauseMs: 0,
+        lastStateChangeTimestamp: null,
+        klingeln: 0,
+        entscheider: 0,
+        kunde: 0,
+        abrechnung: 0,
+        zaehler: 0,
+        provisionsList: [],
+        defaultProv: parseFloat(document.getElementById('val-defaultProv').value) || 50
+      };
+      saveData();
+      updateUI();
+    }
+  }
+
+  function exportCSV() {
+    var datum = new Date().toLocaleDateString('de-DE');
+    var times = getEffectiveTimes();
+    var workHours = (times.workSeconds / 3600);
+    var totalProvision = 0;
+    for (var i = 0; i < state.provisionsList.length; i++) {
+      totalProvision += state.provisionsList[i];
+    }
+    var hourlyProv = workHours > 0 ? (totalProvision / workHours) : 0;
+    var klingelnPerHour = workHours > 0 ? (state.klingeln / workHours) : 0;
+    var entscheiderRate = state.klingeln > 0 ? ((state.entscheider / state.klingeln) * 100) : 0;
+    var euroPerKlingeln = state.klingeln > 0 ? (totalProvision / state.klingeln) : 0;
+
+    var indivProvisionsStr = state.provisionsList.join('|');
+
+    var csvContent = "data:text/csv;charset=utf-8,"
+      + "Datum;Arbeitszeit;Pausenzeit;Klingeln;Entscheider;Kunden;Abrechnung;Zaehler;Einzel_Provisionen_EUR;Gesamtprovision_EUR;EUR_pro_Std;Klingeln_pro_Std;Entscheiderquote_Prozent;EUR_pro_Klingeln\n"
+      + datum + ";" + formatTime(times.workSeconds) + ";" + formatTime(times.pauseSeconds) + ";" + state.klingeln + ";" + state.entscheider + ";" + state.kunde + ";" + state.abrechnung + ";" + state.zaehler + ";\"" + indivProvisionsStr + "\";" + totalProvision.toFixed(2) + ";" + hourlyProv.toFixed(2) + ";" + klingelnPerHour.toFixed(1) + ";" + entscheiderRate.toFixed(1) + ";" + euroPerKlingeln.toFixed(2);
+
+    var encodedUri = encodeURI(csvContent);
+    var link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "Vertrieb_Auswertung_" + datum + ".csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // SERVICE WORKER REGISTRIERUNG (Offline-Bereitstellung)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      var swCode = `
+        const CACHE_NAME = 'vertrieb-v1';
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])));
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+        });
+      `;
+      var blob = new Blob([swCode], { type: 'text/javascript' });
+      var blobUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(blobUrl).catch(function(err) {
+        console.log('SW Info:', err);
+      });
+    });
+  }
+
+  window.onload = function() {
+    loadData();
+  };
+</script>
+
+</body>
+</html>
